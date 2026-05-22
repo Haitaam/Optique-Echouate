@@ -5,27 +5,25 @@
             <p class="mt-3 text-heroi-text-muted max-w-lg mx-auto">{{ __('messages.testimonials.subtitle') }}</p>
         </div>
 
+        @php
+            $testimonials = \App\Models\Testimonial::active()->ordered()->get();
+        @endphp
+
+        @if ($testimonials->isNotEmpty())
         <div x-data="{ current: 0 }" class="relative overflow-hidden">
             <div class="flex transition-transform duration-500 ease-out" :style="`transform: translateX(-${current * 100}%)`">
-                @php
-                    $testimonials = [
-                        ['name' => 'Sophie Laurent', 'role' => 'Designer', 'avatar' => 'SL', 'text' => 'Le quiz de style était incroyablement précis. Il m\'a recommandé des montures que je n\'aurais jamais choisies moi-même, et elles sont devenues mes lunettes préférées !'],
-                        ['name' => 'Marcus Chen', 'role' => 'Ingénieur Logiciel', 'avatar' => 'MC', 'text' => 'Une qualité premium qui se ressent vraiment. Les montures en titane sont incroyablement légères, et le revêtement anti-lumière bleue a fait une énorme différence pour mon travail sur écran.'],
-                        ['name' => 'Aisha Patel', 'role' => 'Médecin', 'avatar' => 'AP', 'text' => 'En tant que personne qui porte des lunettes quotidiennement, le confort est primordial. Optique Échouate a allié style et confort toute la journée. L\'examen de la vue était complet et professionnel.'],
-                        ['name' => 'James Wilson', 'role' => 'Directeur Marketing', 'avatar' => 'JW', 'text' => 'Je n\'ai jamais reçu autant de compliments sur mes lunettes. Le processus de sélection était fluide et l\'essayage à domicile très pratique.'],
-                    ];
-                @endphp
-
                 @foreach ($testimonials as $t)
                     <div class="min-w-full px-2 sm:px-4">
                         <x-card padding="p-6 sm:p-8" class="text-center mx-auto max-w-lg">
                             <div class="w-16 h-16 rounded-full hero-gradient flex items-center justify-center mx-auto mb-4 text-lg font-bold text-white">
-                                {{ $t['avatar'] }}
+                                {{ $t->avatar_initials }}
                             </div>
-                            <p class="text-heroi-text leading-relaxed mb-6 text-sm sm:text-base">&ldquo;{{ $t['text'] }}&rdquo;</p>
+                            <p class="text-heroi-text leading-relaxed mb-6 text-sm sm:text-base">&ldquo;{{ $t->text }}&rdquo;</p>
                             <div>
-                                <p class="font-semibold text-white">{{ $t['name'] }}</p>
-                                <p class="text-xs text-heroi-text-muted">{{ $t['role'] }}</p>
+                                <p class="font-semibold text-white">{{ $t->name }}</p>
+                                @if ($t->role)
+                                    <p class="text-xs text-heroi-text-muted">{{ $t->role }}</p>
+                                @endif
                             </div>
                         </x-card>
                     </div>
@@ -41,9 +39,10 @@
             <button @click="current = Math.max(0, current - 1)" class="absolute top-1/2 -translate-y-1/2 ltr:left-0 rtl:right-0 w-10 h-10 rounded-full glass-strong flex items-center justify-center text-white hover:bg-white/10 transition-all">
                 <svg class="w-5 h-5 rtl-flip" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
-            <button @click="current = Math.min({{ count($testimonials) - 1 }}, current + 1)" class="absolute top-1/2 -translate-y-1/2 ltr:right-0 rtl:left-0 w-10 h-10 rounded-full glass-strong flex items-center justify-center text-white hover:bg-white/10 transition-all">
+            <button @click="current = Math.min({{ $testimonials->count() - 1 }}, current + 1)" class="absolute top-1/2 -translate-y-1/2 ltr:right-0 rtl:left-0 w-10 h-10 rounded-full glass-strong flex items-center justify-center text-white hover:bg-white/10 transition-all">
                 <svg class="w-5 h-5 rtl-flip" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
         </div>
+        @endif
     </div>
 </section>

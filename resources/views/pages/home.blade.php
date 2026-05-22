@@ -75,7 +75,6 @@
     </section>
 
     @include('partials.services')
-    @include('partials.testimonials')
 
     {{-- CTA Section --}}
     <section class="py-20 relative">
@@ -90,6 +89,54 @@
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         {{ __('messages.cta.button') }}
                     </x-button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @include('partials.testimonials')
+
+    {{-- Visitor Opinion Form --}}
+    <section class="py-16 relative">
+        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-strong rounded-3xl p-6 sm:p-10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-48 h-48 bg-orange-500/10 rounded-full blur-[60px]"></div>
+                <div class="relative">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white text-center mb-2">Donnez votre avis</h2>
+                    <p class="text-heroi-text-muted text-sm text-center mb-6">Votre opinion nous aide à nous améliorer</p>
+
+                    @if (session('success'))
+                        <div class="mb-4 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm text-center">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('avis.store') }}" class="space-y-4">
+                        @csrf
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <input type="text" name="name" placeholder="Votre nom *" value="{{ old('name') }}" required
+                                    class="w-full rounded-xl bg-white/5 border border-white/10 text-white px-4 py-3 text-sm placeholder-heroi-text-muted/50 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all">
+                                @error('name') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <input type="text" name="work" placeholder="Votre profession" value="{{ old('work') }}"
+                                    class="w-full rounded-xl bg-white/5 border border-white/10 text-white px-4 py-3 text-sm placeholder-heroi-text-muted/50 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all">
+                            </div>
+                        </div>
+                        <div>
+                            <textarea name="text" rows="3" placeholder="Votre opinion *" required
+                                class="w-full rounded-xl bg-white/5 border border-white/10 text-white px-4 py-3 text-sm placeholder-heroi-text-muted/50 focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-all resize-none">{{ old('text') }}</textarea>
+                            @error('text') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <div class="flex justify-center">
+                            <button type="submit"
+                                class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-orange-500 text-white hover:bg-orange-400 text-sm font-medium transition-all shadow-lg shadow-orange-500/25">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                Envoyer mon avis
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

@@ -202,6 +202,40 @@ body {
     50% { transform: translateY(8px) scaleX(0.92); opacity: 0.7; }
 }
 
+/* ── Premium Page Loader ── */
+.animate-loader-logo {
+    animation: loader-logo-pulse 1.8s ease-in-out infinite;
+}
+.animate-loader-ring {
+    animation: loader-ring-spin 2s linear infinite;
+    background: conic-gradient(from 0deg, transparent 30%, rgba(249,115,22,0.5) 60%, rgba(249,115,22,0.2) 80%, transparent 100%);
+}
+.animate-loader-ring-reverse {
+    animation: loader-ring-spin-reverse 2.8s linear infinite;
+    background: conic-gradient(from 180deg, transparent 40%, rgba(255,255,255,0.08) 70%, transparent 100%);
+}
+.animate-loader-text {
+    animation: loader-text-fade 1.4s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes loader-logo-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.04); opacity: 0.85; }
+}
+@keyframes loader-ring-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes loader-ring-spin-reverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+@keyframes loader-text-fade {
+    0% { opacity: 0; transform: translateY(6px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
 .gradient-glow {
     position: relative;
 }

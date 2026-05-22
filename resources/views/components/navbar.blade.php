@@ -16,7 +16,6 @@
             <a href="{{ route('appointments') }}" class="text-sm text-heroi-text-muted hover:text-white transition-colors">{{ __('messages.nav.book') }}</a>
             <a href="{{ route('eye-health') }}" class="text-sm text-heroi-text-muted hover:text-white transition-colors">{{ __('messages.nav.eye_health') }}</a>
 
-           
             <a href="{{ route('quiz') }}" class="hero-gradient text-white px-5 py-2 rounded-full text-sm font-medium hover-lift glow-orange transition-all duration-300">
                 {{ __('messages.nav.find_your_fit') }}
             </a>

@@ -5,7 +5,14 @@
 @php $hideNav = true; @endphp
 
 @section('content')
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="min-h-screen bg-heroi-bg">
+    <div class="border-b border-white/5 bg-[#0c0c0c]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6 h-12">
+            <a href="{{ route('admin.glasses.index') }}" class="text-sm font-medium text-orange-400 border-b-2 border-orange-400 pb-0.5">Lunettes</a>
+            <a href="{{ route('admin.testimonials.index') }}" class="text-sm font-medium text-heroi-text-muted hover:text-white transition-colors">Avis Clients</a>
+        </div>
+    </div>
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <div class="flex items-center gap-4 mb-8">
         <a href="{{ route('admin.glasses.index') }}" class="text-heroi-text-muted hover:text-white transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
@@ -134,5 +141,6 @@
             </x-button>
         </div>
     </form>
+</div>
 </div>
 @endsection

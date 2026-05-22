@@ -558,6 +558,25 @@ Alpine.data('adminConfirm', () => ({
     },
 }));
 
+Alpine.data('pageLoader', () => ({
+    visible: true,
+    init() {
+        if (document.readyState === 'complete') {
+            this.hide();
+        } else {
+            window.addEventListener('load', () => this.hide());
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    if (document.readyState === 'complete') this.hide();
+                }, 800);
+            });
+        }
+    },
+    hide() {
+        setTimeout(() => { this.visible = false; }, 400);
+    },
+}));
+
 window.openFacePreview = function(product, faceData) {
     window.dispatchEvent(new CustomEvent('face-preview-open', { detail: { product, faceData } }));
 };

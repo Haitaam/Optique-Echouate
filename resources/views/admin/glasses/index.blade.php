@@ -6,6 +6,14 @@
 
 @section('content')
 <div class="min-h-screen bg-heroi-bg">
+    {{-- Admin Navigation --}}
+    <div class="border-b border-white/5 bg-[#0c0c0c]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6 h-12">
+            <a href="{{ route('admin.glasses.index') }}" class="text-sm font-medium text-orange-400 border-b-2 border-orange-400 pb-0.5">Lunettes</a>
+            <a href="{{ route('admin.testimonials.index') }}" class="text-sm font-medium text-heroi-text-muted hover:text-white transition-colors">Avis Clients</a>
+        </div>
+    </div>
+
     {{-- Confirm Modal --}}
     <div x-data="adminConfirm"
         x-show="open"

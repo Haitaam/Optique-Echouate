@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('lang/{locale}', [LanguageController::class, 'switch'])->name('lang.switch');
 
 Route::get('/', [PageController::class, 'home'])->name('home');
+Route::post('/avis', [PageController::class, 'storeAvis'])->name('avis.store');
 Route::get('/eye-health', [PageController::class, 'eyeHealth'])->name('eye-health');
 
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
@@ -34,4 +35,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/glasses/bulk-sync-fix', [App\Http\Controllers\Admin\GlassesController::class, 'bulkSyncFix'])->name('glasses.bulk-sync-fix');
     Route::post('/glasses/smart-fix', [App\Http\Controllers\Admin\GlassesController::class, 'smartFix'])->name('glasses.smart-fix');
     Route::get('/glasses/export', [App\Http\Controllers\Admin\GlassesController::class, 'export'])->name('glasses.export');
+
+    Route::get('/testimonials', [App\Http\Controllers\Admin\TestimonialController::class, 'index'])->name('testimonials.index');
+    Route::get('/testimonials/create', [App\Http\Controllers\Admin\TestimonialController::class, 'create'])->name('testimonials.create');
+    Route::post('/testimonials', [App\Http\Controllers\Admin\TestimonialController::class, 'store'])->name('testimonials.store');
+    Route::get('/testimonials/{testimonial}/edit', [App\Http\Controllers\Admin\TestimonialController::class, 'edit'])->name('testimonials.edit');
+    Route::put('/testimonials/{testimonial}', [App\Http\Controllers\Admin\TestimonialController::class, 'update'])->name('testimonials.update');
+    Route::delete('/testimonials/{testimonial}', [App\Http\Controllers\Admin\TestimonialController::class, 'destroy'])->name('testimonials.destroy');
 });

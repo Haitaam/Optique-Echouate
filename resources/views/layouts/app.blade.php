@@ -6,9 +6,14 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Optique Échouate') — Lunettes Premium</title>
     <meta name="description" content="@yield('meta_description', 'Découvrez des lunettes de luxe premium chez Optique Échouate. Quiz de style intelligent, soins oculaires experts et prise de rendez-vous.')">
+    <link rel="icon" type="image/png" sizes="192x192" href="/optique-echouate.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/optique-echouate.png">
+    <link rel="shortcut icon" href="/optique-echouate.png">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen antialiased">
+    <x-loader />
+
     {{-- Toast Notification --}}
     <div x-data="toast" x-init="init()" class="fixed top-4 right-4 z-[100] space-y-2">
         <template x-teleport="body">
