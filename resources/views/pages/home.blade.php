@@ -1,0 +1,97 @@
+@extends('layouts.app')
+
+@section('title', 'Optique Échouate — Lunettes Premium')
+
+@section('content')
+    @include('partials.hero')
+
+    {{-- Featured Collection --}}
+    <section class="py-20 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-10">
+                <div>
+                    <h2 class="text-3xl sm:text-4xl font-bold text-white">{{ __('messages.featured.title') }}</h2>
+                    <p class="mt-2 text-heroi-text-muted">{{ __('messages.featured.subtitle') }}</p>
+                </div>
+                <x-button href="{{ route('products.index') }}" variant="ghost" size="sm">
+                    {{ __('messages.featured.view_all') }}
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </x-button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" x-data="productGrid" @mouseleave="clearHovered()">
+                @foreach ($featured as $product)
+                    <div
+                        class="relative transition-all duration-500 ease-out cursor-pointer"
+                        @mouseenter="setHovered({{ $product->id }})"
+                        @touchstart.prevent="setHovered({{ $product->id }}); setTimeout(() => clearHovered(), 3000)"
+                        :class="hoveredId === {{ $product->id }} ? 'z-20 sm:scale-105 sm:-translate-y-2' : 'z-10 scale-100 translate-y-0'"
+                        onclick="window.dispatchEvent(new CustomEvent('product-detail-open', {detail: @js($product->toArray())}))"
+                    >
+                        <div
+                            class="relative overflow-hidden rounded-2xl transition-all duration-500 ease-out"
+                            :class="hoveredId === {{ $product->id }}
+                                ? 'shadow-2xl shadow-orange-500/20 ring-1 ring-orange-500/30 bg-white/5'
+                                : 'shadow-lg shadow-black/20 bg-white/[0.02] hover:bg-white/[0.04]'"
+                        >
+                            <div class="product-image-wrap">
+                                <img src="{{ $product->image }}" alt="{{ $product->name }}" loading="lazy">
+                            </div>
+
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-all duration-500 ease-out flex flex-col justify-end p-5"
+                                :class="hoveredId === {{ $product->id }} ? 'opacity-100' : 'opacity-0 pointer-events-none'">
+                                <div class="space-y-2 translate-y-2 transition-transform duration-500 ease-out"
+                                    :class="hoveredId === {{ $product->id }} ? 'translate-y-0' : 'translate-y-4'">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-xs font-medium text-orange-300 bg-orange-500/20 px-2.5 py-0.5 rounded-full">{{ $product->brand }}</span>
+                                        <span class="text-xs text-white/70 bg-white/10 px-2.5 py-0.5 rounded-full">{{ $product->frame_shape }}</span>
+                                        <span class="text-xs text-white/70 bg-white/10 px-2.5 py-0.5 rounded-full">{{ $product->material }}</span>
+                                    </div>
+                                    <h3 class="text-white font-semibold text-base">{{ $product->name }}</h3>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-lg font-bold text-white">{{ number_format($product->price * 10, 0, ',', ' ') }} MAD</span>
+                                        <span class="text-xs text-orange-300 bg-orange-500/20 px-3 py-1 rounded-full">{{ $product->color }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-4 sm:p-5 transition-all duration-500 ease-out"
+                                :class="hoveredId === {{ $product->id }} ? 'opacity-0' : 'opacity-100'">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <span class="text-xs text-heroi-text-muted uppercase tracking-wider">{{ $product->brand }}</span>
+                                    <span class="text-xs text-heroi-text-muted">{{ $product->frame_shape }}</span>
+                                </div>
+                                <h3 class="font-semibold text-white text-sm sm:text-base mb-1 truncate">{{ $product->name }}</h3>
+                                <div class="flex items-center justify-between mt-2">
+                                    <span class="text-base font-bold hero-gradient-text">{{ number_format($product->price * 10, 0, ',', ' ') }} MAD</span>
+                                    <span class="w-4 h-4 rounded-full border border-white/10 block" style="background: {{ match(strtolower($product->color)) { 'gold' => '#FFD700', 'rose gold' => '#B76E79', 'silver' => '#C0C0C0', 'gunmetal' => '#2C3539', 'black' => '#000', 'matte black' => '#1a1a1a', 'tortoise' => '#8B6914', 'crystal' => '#E8E8E8', 'white' => '#fff', 'blue' => '#3B82F6', 'red' => '#EF4444', default => '#f97316' } }}"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    @include('partials.services')
+    @include('partials.testimonials')
+
+    {{-- CTA Section --}}
+    <section class="py-20 relative">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="glass-strong rounded-3xl p-8 sm:p-12 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-orange-500/15 rounded-full blur-[80px]"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-[80px]"></div>
+                <div class="relative">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">{{ __('messages.cta.title') }}</h2>
+                    <p class="text-heroi-text-muted mb-8 max-w-md mx-auto">{{ __('messages.cta.subtitle') }}</p>
+                    <x-button href="{{ route('appointments') }}" variant="primary" size="lg" class="shadow-2xl">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        {{ __('messages.cta.button') }}
+                    </x-button>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
