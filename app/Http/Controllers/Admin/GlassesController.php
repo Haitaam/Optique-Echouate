@@ -35,7 +35,14 @@ class GlassesController extends \App\Http\Controllers\Controller
         if ($shape = request('frame_shape')) $query->where('frame_shape', $shape);
         if ($color = request('color')) $query->where('color', $color);
 
-        $products = $query->orderBy('id', 'desc')->paginate(50);
+        $sortBy = request('sort_by', 'id');
+        $sortOrder = request('sort_order', 'desc');
+
+        $allowedSorts = ['id', 'name', 'price', 'stock', 'created_at', 'brand'];
+        if (!in_array($sortBy, $allowedSorts)) $sortBy = 'id';
+        if (!in_array($sortOrder, ['asc', 'desc'])) $sortOrder = 'desc';
+
+        $products = $query->orderBy($sortBy, $sortOrder)->paginate(50);
         $diskFiles = $this->getDiskFiles($scanner);
 
         $allProducts = Product::all();
@@ -58,7 +65,8 @@ class GlassesController extends \App\Http\Controllers\Controller
 
         return view('admin.glasses.index', compact(
             'products', 'diskFiles', 'stats', 'categories',
-            'brands', 'genders', 'shapes', 'colors', 'brandList'
+            'brands', 'genders', 'shapes', 'colors', 'brandList',
+            'sortBy', 'sortOrder'
         ));
     }
 
@@ -82,6 +90,7 @@ class GlassesController extends \App\Http\Controllers\Controller
             'material' => 'required|string|max:100',
             'color' => 'required|string|max:50',
             'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
             'is_featured' => 'boolean',
             'is_luxury' => 'boolean',
             'categories' => 'array',

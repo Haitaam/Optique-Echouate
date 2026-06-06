@@ -108,7 +108,7 @@
                         'image' => $p->image,
                         'name' => $p->name,
                         'brand' => $p->brand,
-                        'price' => number_format($p->price * 10, 0, ',', ' '),
+                        'price' => number_format($p->price, 0, ',', ' '),
                         'color' => $p->color,
                         'frame_shape' => $p->frame_shape,
                     ]);

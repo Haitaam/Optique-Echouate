@@ -98,6 +98,15 @@
                             </template>
                         </div>
                     </template>
+
+                    {{-- Add to Cart --}}
+                    <div class="flex gap-3 pt-4 border-t border-white/5 mt-4">
+                        <button @click="window.dispatchEvent(new CustomEvent('cart-add', {detail: product})); close();"
+                            class="flex-1 px-6 py-3 rounded-xl bg-orange-500 text-white hover:bg-orange-400 text-sm font-medium transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Ajouter au panier
+                        </button>
+                    </div>
                 </div>
             </template>
         </div>

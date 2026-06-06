@@ -5,8 +5,8 @@
     </div>
 
     @forelse ($results as $result)
-        @php $product = $result['product']; @endphp
-        <x-card padding="p-0" class="overflow-hidden group cursor-pointer" onclick="window.dispatchEvent(new CustomEvent('product-detail-open', {detail: @js($product->toArray())}))">
+        @php $product = $result['product']; $_encoded = base64_encode($product->toJson()); @endphp
+        <x-card padding="p-0" class="overflow-hidden group cursor-pointer" onclick="window.dispatchEvent(new CustomEvent('product-detail-open', {detail: JSON.parse(atob('{{ $_encoded }}'))}))">
             <div class="flex flex-col sm:flex-row">
                 <div class="product-image-side">
                     <img src="{{ $product->image }}" alt="{{ $product->name }}" loading="lazy">
@@ -31,7 +31,7 @@
                         </div>
                     </div>
                     <div class="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
-                        <span class="text-xl font-bold hero-gradient-text">{{ number_format($product->price * 10, 0, ',', ' ') }} MAD</span>
+                        <span class="text-xl font-bold hero-gradient-text">{{ number_format($product->price, 0, ',', ' ') }} MAD</span>
                     </div>
                 </div>
             </div>

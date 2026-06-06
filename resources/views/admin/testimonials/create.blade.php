@@ -5,13 +5,6 @@
 @php $hideNav = true; @endphp
 
 @section('content')
-<div class="min-h-screen bg-heroi-bg">
-    <div class="border-b border-white/5 bg-[#0c0c0c]">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6 h-12">
-            <a href="{{ route('admin.glasses.index') }}" class="text-sm font-medium text-heroi-text-muted hover:text-white transition-colors">Lunettes</a>
-            <a href="{{ route('admin.testimonials.index') }}" class="text-sm font-medium text-orange-400 border-b-2 border-orange-400 pb-0.5">Avis Clients</a>
-        </div>
-    </div>
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <div class="flex items-center gap-4 mb-8">
         <a href="{{ route('admin.testimonials.index') }}" class="text-heroi-text-muted hover:text-white transition-colors">
@@ -65,6 +58,5 @@
             <x-button variant="primary" type="submit">Ajouter</x-button>
         </div>
     </form>
-</div>
 </div>
 @endsection

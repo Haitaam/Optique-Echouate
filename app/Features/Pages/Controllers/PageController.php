@@ -3,21 +3,23 @@
 namespace App\Features\Pages\Controllers;
 
 use App\Features\Products\Models\Product;
+use App\Models\Notification;
 use App\Models\Testimonial;
 
 class PageController extends \App\Http\Controllers\Controller
 {
     public function home()
     {
-        $latest = Product::with('categories')
+        $products = Product::with('categories')
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->filter(fn($p) => $p->imageExists());
+            ->get();
 
-        $featured = $latest->take(6);
-        $heroProducts = $latest->take(5);
+        $withImages = $products->filter(fn($p) => $p->imageExists());
 
-        return view('pages.home', compact('featured', 'heroProducts'));
+        $featured = $withImages->take(6);
+        $heroProducts = $withImages->take(5);
+
+        return view('pages.home', compact('featured', 'heroProducts') + ['gmapsUrl' => 'https://maps.google.com/?q=Optique+Échouate+Maroc']);
     }
 
     public function storeAvis(\Illuminate\Http\Request $request)
@@ -31,16 +33,24 @@ class PageController extends \App\Http\Controllers\Controller
         $words = explode(' ', $data['name']);
         $initials = collect($words)->map(fn($w) => mb_substr($w, 0, 1))->take(2)->join('');
 
-        Testimonial::create([
+        $testimonial = Testimonial::create([
             'name' => $data['name'],
             'role' => $data['work'] ?? null,
             'text' => $data['text'],
             'avatar_initials' => $initials,
             'source' => 'visitor',
-            'is_active' => true,
+            'is_active' => false,
         ]);
 
-        return redirect()->route('home')->with('success', 'Merci pour votre avis ! Il est maintenant visible sur la page.');
+        Notification::create([
+            'type' => 'new_review',
+            'title' => 'Nouvel avis client',
+            'body' => $data['name'] . ' — ' . mb_substr($data['text'], 0, 80) . (mb_strlen($data['text']) > 80 ? '…' : ''),
+            'url' => route('admin.testimonials.index'),
+            'read' => false,
+        ]);
+
+        return redirect()->route('home')->with('success', 'Merci pour votre avis ! Il sera visible après modération.');
     }
 
     public function eyeHealth()

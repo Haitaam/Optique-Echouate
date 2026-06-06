@@ -5,14 +5,6 @@
 @php $hideNav = true; @endphp
 
 @section('content')
-<div class="min-h-screen bg-heroi-bg">
-    {{-- Admin Navigation --}}
-    <div class="border-b border-white/5 bg-[#0c0c0c]">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6 h-12">
-            <a href="{{ route('admin.glasses.index') }}" class="text-sm font-medium text-orange-400 border-b-2 border-orange-400 pb-0.5">Lunettes</a>
-            <a href="{{ route('admin.testimonials.index') }}" class="text-sm font-medium text-heroi-text-muted hover:text-white transition-colors">Avis Clients</a>
-        </div>
-    </div>
 
     {{-- Confirm Modal --}}
     <div x-data="adminConfirm"
@@ -245,12 +237,29 @@
                                     class="w-4 h-4 rounded border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/40 cursor-pointer">
                             </th>
                             <th class="w-14"></th>
-                            <th>Produit</th>
-                            <th class="hidden md:table-cell">Marque</th>
+                            <th>
+                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'name', 'sort_order' => ($sortBy === 'name' && $sortOrder === 'asc') ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-orange-400 transition-colors">
+                                    Produit @if($sortBy === 'name')<span class="text-orange-400">{{ $sortOrder === 'asc' ? '▲' : '▼' }}</span>@endif
+                                </a>
+                            </th>
+                            <th class="hidden md:table-cell">
+                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'brand', 'sort_order' => ($sortBy === 'brand' && $sortOrder === 'asc') ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-orange-400 transition-colors">
+                                    Marque @if($sortBy === 'brand')<span class="text-orange-400">{{ $sortOrder === 'asc' ? '▲' : '▼' }}</span>@endif
+                                </a>
+                            </th>
                             <th class="hidden lg:table-cell">Genre</th>
                             <th class="hidden sm:table-cell">Forme</th>
                             <th class="hidden sm:table-cell">Couleur</th>
-                            <th class="hidden sm:table-cell">Prix</th>
+                            <th class="hidden sm:table-cell">
+                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'stock', 'sort_order' => ($sortBy === 'stock' && $sortOrder === 'asc') ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-orange-400 transition-colors">
+                                    Stock @if($sortBy === 'stock')<span class="text-orange-400">{{ $sortOrder === 'asc' ? '▲' : '▼' }}</span>@endif
+                                </a>
+                            </th>
+                            <th class="hidden sm:table-cell">
+                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'price', 'sort_order' => ($sortBy === 'price' && $sortOrder === 'asc') ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-orange-400 transition-colors">
+                                    Prix @if($sortBy === 'price')<span class="text-orange-400">{{ $sortOrder === 'asc' ? '▲' : '▼' }}</span>@endif
+                                </a>
+                            </th>
                             <th class="text-right">Actions</th>
                         </tr>
                     </thead>
@@ -296,7 +305,10 @@
                                     </span>
                                 </td>
                                 <td class="hidden sm:table-cell">
-                                    <span class="text-white text-sm font-medium">{{ number_format($product->price * 10, 0, ',', ' ') }}</span>
+                                    <span class="text-{{ $product->stock > 5 ? 'emerald' : ($product->stock > 0 ? 'amber' : 'red') }}-400 text-sm font-medium">{{ $product->stock ?? 0 }}</span>
+                                </td>
+                                <td class="hidden sm:table-cell">
+                                    <span class="text-white text-sm font-medium">{{ number_format($product->price, 2, ',', ' ') }}</span>
                                     <span class="text-heroi-text-muted text-xs">MAD</span>
                                 </td>
                                 <td class="text-right">
@@ -358,5 +370,4 @@
             </div>
         </details>
     </div>
-</div>
 @endsection

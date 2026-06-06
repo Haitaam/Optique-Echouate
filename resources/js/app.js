@@ -2,6 +2,196 @@ import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
 
+// --- Live Update Store ---
+// Shared reactive store that holds the latest hashes from /live/hash
+Alpine.store('live', {
+    hash: null,
+    productsHash: null,
+    ordersHash: null,
+    settingsHash: null,
+    notifHash: null,
+    adminData: null,
+    settingsData: null,
+    _timer: null,
+    _paused: false,
+
+    start() {
+        if (this._timer) return;
+        this.poll();
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) { this._paused = true; if (this._timer) { clearTimeout(this._timer); this._timer = null; } }
+            else { this._paused = false; this.poll(); }
+        });
+    },
+
+    poll() {
+        if (this._paused) return;
+        fetch('/live/hash', { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(data => {
+                if (this.hash && data.combined !== this.hash) {
+                    if (data.products !== this.productsHash) {
+                        this.productsHash = data.products;
+                        window.dispatchEvent(new CustomEvent('live-update:products'));
+                    }
+                    if (data.orders !== this.ordersHash) {
+                        this.ordersHash = data.orders;
+                        window.dispatchEvent(new CustomEvent('live-update:orders'));
+                    }
+                    if (data.settings !== this.settingsHash) {
+                        this.settingsHash = data.settings;
+                        window.dispatchEvent(new CustomEvent('live-update:settings'));
+                        if (this.settingsData) {
+                            fetch('/live/settings', { headers: { 'Accept': 'application/json' } })
+                                .then(r => r.json()).then(s => { this.settingsData = s; window.dispatchEvent(new CustomEvent('live-update:settings-data', { detail: s })); })
+                                .catch(() => {});
+                        }
+                    }
+                    if (data.notifications !== this.notifHash) {
+                        this.notifHash = data.notifications;
+                        window.dispatchEvent(new CustomEvent('live-update:notifications'));
+                    }
+                }
+                if (!this.hash) {
+                    this.productsHash = data.products;
+                    this.ordersHash = data.orders;
+                    this.settingsHash = data.settings;
+                    this.notifHash = data.notifications;
+                }
+                this.hash = data.combined;
+                this._timer = setTimeout(() => this.poll(), 30000);
+            })
+            .catch(() => { this._timer = setTimeout(() => this.poll(), 30000); });
+    },
+
+    stop() {
+        if (this._timer) { clearTimeout(this._timer); this._timer = null; }
+    }
+});
+
+// --- Global Poller Component ---
+// Attach x-data="livePoll" to <body> to start the background poller
+Alpine.data('livePoll', () => ({
+    init() {
+        Alpine.store('live').start();
+    }
+}));
+
+// --- Live Order Status (Tracking Page) ---
+Alpine.data('liveOrderStatus', () => ({
+    orderId: null,
+    orderData: null,
+    polling: false,
+    _interval: null,
+
+    init() {
+        this.orderId = this.$el.dataset.orderId;
+        if (!this.orderId) return;
+        this.orderData = {
+            status: this.$el.dataset.status || '',
+            label: this.$el.dataset.label || '',
+            badgeClass: this.$el.dataset.badgeClass || '',
+            icon: this.$el.dataset.icon || '',
+        };
+        window.addEventListener('live-update:orders', () => this.refresh());
+        this._interval = setInterval(() => this.refresh(), 15000);
+    },
+
+    refresh() {
+        if (!this.orderId) return;
+        fetch('/live/order/' + this.orderId, { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status !== this.orderData.status) {
+                    this.orderData = {
+                        status: data.status,
+                        label: data.status_label,
+                        badgeClass: data.badge_class,
+                        icon: data.status_icon,
+                    };
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { message: 'La commande #' + this.orderId + ' est maintenant : ' + data.status_label, type: 'success' }
+                    }));
+                }
+            })
+            .catch(() => {});
+    },
+
+    destroy() {
+        if (this._interval) clearInterval(this._interval);
+    }
+}));
+
+// --- Live Admin Dashboard ---
+Alpine.data('liveAdmin', () => ({
+    pendingOrders: 0,
+    unreadNotifications: 0,
+    totalOrders: 0,
+    totalRevenue: '',
+    revenueToday: '',
+    loading: false,
+
+    init() {
+        this.pendingOrders = parseInt(this.$el.dataset.pending || '0');
+        this.unreadNotifications = parseInt(this.$el.dataset.notifs || '0');
+        this.totalOrders = parseInt(this.$el.dataset.total || '0');
+        this.totalRevenue = this.$el.dataset.revenue || '';
+        this.revenueToday = this.$el.dataset.revenueToday || '';
+        window.addEventListener('live-update:orders', () => this.refresh());
+        window.addEventListener('live-update:notifications', () => this.refresh());
+    },
+
+    destroy() {
+        window.removeEventListener('live-update:orders', this.refresh);
+        window.removeEventListener('live-update:notifications', this.refresh);
+    },
+    refresh() {
+        this.loading = true;
+        fetch('/live/admin', { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(data => {
+                this.pendingOrders = data.pending_orders;
+                this.unreadNotifications = data.unread_notifications;
+                this.totalOrders = data.total_orders;
+                this.totalRevenue = data.total_revenue;
+                this.revenueToday = data.revenue_today;
+                this.loading = false;
+            })
+            .catch(() => { this.loading = false; });
+    }
+}));
+
+// --- Live Footer Settings ---
+Alpine.data('liveFooter', () => ({
+    profession: '',
+    city: '',
+    phone: '',
+    email: '',
+    hours: '',
+    mapsUrl: '',
+    siteName: '',
+
+    init() {
+        this.profession = this.$el.dataset.profession || '';
+        this.city = this.$el.dataset.city || '';
+        this.phone = this.$el.dataset.phone || '';
+        this.email = this.$el.dataset.email || '';
+        this.hours = this.$el.dataset.hours || '';
+        this.mapsUrl = this.$el.dataset.mapsUrl || '';
+        this.siteName = this.$el.dataset.siteName || '';
+        window.addEventListener('live-update:settings-data', e => {
+            const s = e.detail;
+            if (s.profession) this.profession = s.profession;
+            if (s.city) this.city = s.city;
+            if (s.contact_phone) this.phone = s.contact_phone;
+            if (s.contact_email) this.email = s.contact_email;
+            if (s.working_hours) this.hours = s.working_hours;
+            if (s.maps_url) this.mapsUrl = s.maps_url;
+            if (s.site_name) this.siteName = s.site_name;
+        });
+    }
+}));
+
 Alpine.data('productFilter', () => ({
     filters: {
         brand: '',
@@ -9,8 +199,7 @@ Alpine.data('productFilter', () => ({
         frame_shape: '',
         gender: '',
         material: '',
-        price_min: '',
-        price_max: '',
+        category: '',
         search: '',
     },
     loading: false,
@@ -25,8 +214,11 @@ Alpine.data('productFilter', () => ({
         this.$watch('filters.frame_shape', () => this.fetchProducts());
         this.$watch('filters.gender', () => this.fetchProducts());
         this.$watch('filters.material', () => this.fetchProducts());
-        this.$watch('filters.price_min', () => this.fetchProducts());
-        this.$watch('filters.price_max', () => this.fetchProducts());
+        this.$watch('filters.category', () => this.fetchProducts());
+        window.addEventListener('live-update:products', () => this.fetchProducts());
+    },
+    destroy() {
+        if (this.searchTimeout) clearTimeout(this.searchTimeout);
     },
     fetchProducts() {
         this.loading = true;
@@ -184,11 +376,201 @@ Alpine.data('appointmentForm', () => ({
 Alpine.data('navbar', () => ({
     scrolled: false,
     mobileOpen: false,
+    searchOpen: false,
+    searchQuery: '',
+    searchResults: [],
+    searchBrands: [],
+    searchCategories: [],
+    searchTotal: 0,
+    searching: false,
+    hasSearched: false,
+    highlightIndex: -1,
+    searchCache: {},
+    recentSearches: [],
+
     init() {
         window.addEventListener('scroll', () => {
             this.scrolled = window.scrollY > 20;
         });
+        try {
+            const saved = localStorage.getItem('recent_searches');
+            if (saved) this.recentSearches = JSON.parse(saved);
+        } catch(e) {}
+    },
+
+    get hasResults() {
+        return this.searchProducts.length > 0 || this.searchBrands.length > 0 || this.searchCategories.length > 0;
+    },
+
+    get searchProducts() {
+        return this.searchResults || [];
+    },
+
+    get totalResults() {
+        const p = this.searchProducts.length;
+        const b = this.searchBrands.length;
+        const c = this.searchCategories.length;
+        return p + b + c;
+    },
+
+    get flatResults() {
+        const items = [];
+        if (this.searchProducts.length) {
+            items.push({ type: 'header', label: 'Produits' });
+            this.searchProducts.forEach(r => items.push({ type: 'product', ...r }));
+        }
+        if (this.searchBrands.length) {
+            items.push({ type: 'header', label: 'Marques' });
+            this.searchBrands.forEach(r => items.push({ type: 'brand', ...r }));
+        }
+        if (this.searchCategories.length) {
+            items.push({ type: 'header', label: 'Catégories' });
+            this.searchCategories.forEach(r => items.push({ type: 'category', ...r }));
+        }
+        return items;
+    },
+
+    doSearch(go) {
+        const q = this.searchQuery.trim();
+        if (!q) return;
+        this.saveRecent(q);
+        if (go !== false) {
+            window.location.href = '/products?search=' + encodeURIComponent(q);
+        }
+    },
+
+    saveRecent(q) {
+        this.recentSearches = this.recentSearches.filter(s => s !== q);
+        this.recentSearches.unshift(q);
+        if (this.recentSearches.length > 5) this.recentSearches.pop();
+        localStorage.setItem('recent_searches', JSON.stringify(this.recentSearches));
+    },
+
+    searchLive() {
+        const q = this.searchQuery.trim();
+        if (q.length < 2) {
+            this.searchResults = [];
+            this.searchBrands = [];
+            this.searchCategories = [];
+            this.searchTotal = 0;
+            this.hasSearched = false;
+            this.highlightIndex = -1;
+            return;
+        }
+        if (this.searchCache[q]) {
+            const cached = this.searchCache[q];
+            this.searchResults = cached.products;
+            this.searchBrands = cached.brands;
+            this.searchCategories = cached.categories;
+            this.searchTotal = cached.total;
+            this.hasSearched = true;
+            this.searching = false;
+            return;
+        }
+        this.searching = true;
+        this.hasSearched = true;
+        const params = new URLSearchParams({ q });
+        fetch('/products/search-json?' + params.toString(), {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            this.searchResults = data.products || [];
+            this.searchBrands = data.brands || [];
+            this.searchCategories = data.categories || [];
+            this.searchTotal = data.total || 0;
+            this.searchCache[q] = {
+                products: this.searchResults,
+                brands: this.searchBrands,
+                categories: this.searchCategories,
+                total: this.searchTotal,
+            };
+            this.searching = false;
+        })
+        .catch(() => {
+            this.searchResults = [];
+            this.searchBrands = [];
+            this.searchCategories = [];
+            this.searchTotal = 0;
+            this.searching = false;
+        });
+    },
+
+    onKeydown(e) {
+        if (!this.searchOpen || !this.hasSearched) return;
+        const total = this.totalResults;
+        if (total === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            this.highlightIndex = this.highlightIndex < total - 1 ? this.highlightIndex + 1 : 0;
+            this.scrollToHighlight();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            this.highlightIndex = this.highlightIndex > 0 ? this.highlightIndex - 1 : total - 1;
+            this.scrollToHighlight();
+        } else if (e.key === 'Enter' && this.highlightIndex >= 0) {
+            e.preventDefault();
+            this.selectHighlighted();
+        } else if (e.key === 'Escape') {
+            this.closeSearch();
+        }
+    },
+
+    scrollToHighlight() {
+        this.$nextTick(() => {
+            const el = document.querySelector('[data-search-idx="' + this.highlightIndex + '"]');
+            if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
+    },
+
+    selectHighlighted() {
+        if (this.highlightIndex < 0) return;
+        const flat = this.flatResults;
+        const item = flat[this.highlightIndex];
+        if (!item) return;
+        if (item.type === 'product') {
+            this.saveRecent(item.name);
+            window.location.href = '/products?search=' + encodeURIComponent(item.name);
+        } else if (item.type === 'brand') {
+            window.location.href = '/products?brand=' + encodeURIComponent(item.name);
+        } else if (item.type === 'category') {
+            window.location.href = '/products?category=' + item.id;
+        }
+    },
+
+    closeSearch() {
+        this.searchOpen = false;
+        this.searchQuery = '';
+        this.searchResults = [];
+        this.searchBrands = [];
+        this.searchCategories = [];
+        this.searchTotal = 0;
+        this.hasSearched = false;
+        this.highlightIndex = -1;
+    },
+
+    toggleSearch() {
+        this.searchOpen = !this.searchOpen;
+        if (this.searchOpen) {
+            this.$nextTick(() => {
+                const input = this.$el.querySelector('input[type="text"]');
+                if (input) input.focus();
+            });
+        }
+    },
+
+    get showDropdown() {
+        if (!this.searchOpen) return false;
+        if (!this.hasSearched) return false;
+        if (this.searching) return true;
+        if (this.searchQuery.trim().length < 2) return false;
+        return true;
     }
+}));
+
+Alpine.data('accountDropdown', () => ({
+    open: false,
 }));
 
 Alpine.data('toast', () => ({
@@ -295,22 +677,53 @@ Alpine.data('facePreview', () => ({
 Alpine.data('productDetail', () => ({
     open: false,
     product: null,
+    _liveTimer: null,
     init() {
         window.addEventListener('product-detail-open', e => {
             this.product = e.detail;
             this.open = true;
+            this.startLiveRefresh();
         });
         this.$watch('open', val => {
             document.body.style.overflow = val ? 'hidden' : '';
+            if (val) this.startLiveRefresh();
+            else this.stopLiveRefresh();
         });
+        window.addEventListener('live-update:products', () => {
+            if (this.open && this.product) this.refreshProduct();
+        });
+    },
+    startLiveRefresh() {
+        if (this._liveTimer) clearInterval(this._liveTimer);
+        this._liveTimer = setInterval(() => {
+            if (this.open && this.product) this.refreshProduct();
+        }, 30000);
+    },
+    stopLiveRefresh() {
+        if (this._liveTimer) { clearInterval(this._liveTimer); this._liveTimer = null; }
+    },
+    refreshProduct() {
+        if (!this.product) return;
+        fetch('/live/product/' + this.product.id, { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(data => {
+                if (data.price) this.product.price = data.price;
+                if (data.stock !== undefined) this.product.stock = data.stock;
+                if (data.name) this.product.name = data.name;
+                if (data.image) this.product.image = data.image;
+            })
+            .catch(() => {});
+    },
+    destroy() {
+        this.stopLiveRefresh();
     },
     close() {
         this.open = false;
         this.product = null;
+        this.stopLiveRefresh();
     },
     formatPrice(price) {
-        const num = (parseFloat(price) * 10).toLocaleString('fr-FR');
-        return num + ' MAD';
+        return parseFloat(price).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' MAD';
     },
     colorSwatch(color) {
         const map = {
@@ -577,8 +990,168 @@ Alpine.data('pageLoader', () => ({
     },
 }));
 
-window.openFacePreview = function(product, faceData) {
-    window.dispatchEvent(new CustomEvent('face-preview-open', { detail: { product, faceData } }));
-};
+Alpine.data('cart', () => ({
+    items: [],
+    open: false,
+    showCheckoutForm: false,
+    checkoutError: '',
+    init() {
+        const saved = localStorage.getItem('cart_items');
+        if (saved) {
+            try { this.items = JSON.parse(saved); } catch(e) { this.items = []; }
+        }
+        const hasError = this.$el?.dataset?.checkoutError === '1';
+        if (hasError && this.items.length > 0) {
+            this.open = true;
+            this.showCheckoutForm = true;
+            this.checkoutError = this.$el.dataset.checkoutMsg || '';
+        }
+        window.addEventListener('cart-toggle', () => { this.open = !this.open; this.showCheckoutForm = false; this.checkoutError = ''; });
+        window.addEventListener('cart-add', e => this.add(e.detail));
+        this.$watch('items', () => {
+            localStorage.setItem('cart_items', JSON.stringify(this.items));
+            window.dispatchEvent(new CustomEvent('cart-count-updated', { detail: this.count }));
+        });
+    },
+    get count() {
+        return this.items.reduce((sum, item) => sum + item.quantity, 0);
+    },
+    get total() {
+        return this.items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0).toFixed(2);
+    },
+    add(product) {
+        const existing = this.items.find(i => i.id === product.id);
+        if (existing) {
+            existing.quantity++;
+        } else {
+            this.items.push({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.image,
+                brand: product.brand,
+                color: product.color,
+                quantity: 1,
+            });
+        }
+        this.open = true;
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Ajouté au panier', type: 'success' } }));
+    },
+    remove(id) {
+        this.items = this.items.filter(i => i.id !== id);
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Retiré du panier', type: 'success' } }));
+    },
+    updateQuantity(id, qty) {
+        const item = this.items.find(i => i.id === id);
+        if (item) {
+            qty = parseInt(qty);
+            if (qty <= 0) this.remove(id);
+            else item.quantity = qty;
+        }
+    },
+    clear() {
+        this.items = [];
+    },
+    formatPrice(price) {
+        return parseFloat(price).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' MAD';
+    },
+}));
+
+Alpine.data('cartBadge', () => ({
+    count: 0,
+    init() {
+        const saved = localStorage.getItem('cart_items');
+        if (saved) {
+            try {
+                const items = JSON.parse(saved);
+                this.count = items.reduce((sum, i) => sum + i.quantity, 0);
+            } catch(e) {}
+        }
+        window.addEventListener('cart-count-updated', e => { this.count = e.detail; });
+    },
+    toggle() {
+        window.dispatchEvent(new CustomEvent('cart-toggle'));
+    },
+    addToCart(product) {
+        window.dispatchEvent(new CustomEvent('cart-add', { detail: product }));
+    },
+}));
+
+Alpine.data('notifPanel', () => ({
+    open: false,
+    notifications: [],
+    unreadCount: 0,
+    init(initialCount) {
+        this.unreadCount = initialCount || 0;
+        window.addEventListener('notif-count-updated', e => {
+            this.unreadCount = e.detail;
+            localStorage.setItem('notif_unread_count', e.detail);
+        });
+    },
+    toggle() {
+        this.open = !this.open;
+        if (this.open) {
+            this.fetchNotifications();
+        }
+    },
+    close() {
+        this.open = false;
+    },
+    fetchNotifications() {
+        fetch('/admin/notifications/json', {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            this.notifications = data.notifications;
+            this.unreadCount = data.unread_count;
+            localStorage.setItem('notif_unread_count', data.unread_count);
+        })
+        .catch(() => {});
+    },
+    markRead(n) {
+        if (n.read) {
+            window.location.href = n.url;
+            return;
+        }
+        fetch('/admin/notifications/' + n.id + '/read', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+        })
+        .then(r => r.json())
+        .then(data => {
+            n.read = true;
+            this.unreadCount = data.unread_count;
+            localStorage.setItem('notif_unread_count', data.unread_count);
+            window.dispatchEvent(new CustomEvent('notif-count-updated', { detail: data.unread_count }));
+            window.location.href = n.url;
+        })
+        .catch(() => {
+            window.location.href = n.url;
+        });
+    },
+    readAll() {
+        const url = this.$el?.dataset?.readAllUrl || '/admin/notifications/read-all';
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+        })
+        .then(r => r.json())
+        .then(data => {
+            this.notifications.forEach(n => { n.read = true; });
+            this.unreadCount = 0;
+            localStorage.setItem('notif_unread_count', '0');
+            window.dispatchEvent(new CustomEvent('notif-count-updated', { detail: 0 }));
+        })
+        .catch(() => {});
+    },
+}));
+
 
 Alpine.start();

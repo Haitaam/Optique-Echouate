@@ -21,12 +21,13 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" x-data="productGrid" @mouseleave="clearHovered()">
                 @foreach ($featured as $product)
+                    @php $_encoded = base64_encode($product->toJson()) @endphp
                     <div
                         class="relative transition-all duration-500 ease-out cursor-pointer"
                         @mouseenter="setHovered({{ $product->id }})"
-                        @touchstart.prevent="setHovered({{ $product->id }}); setTimeout(() => clearHovered(), 3000)"
+                        @touchstart="setHovered({{ $product->id }}); setTimeout(() => clearHovered(), 3000)"
                         :class="hoveredId === {{ $product->id }} ? 'z-20 sm:scale-105 sm:-translate-y-2' : 'z-10 scale-100 translate-y-0'"
-                        onclick="window.dispatchEvent(new CustomEvent('product-detail-open', {detail: @js($product->toArray())}))"
+                        onclick="window.dispatchEvent(new CustomEvent('product-detail-open', {detail: JSON.parse(atob('{{ $_encoded }}'))}))"
                     >
                         <div
                             class="relative overflow-hidden rounded-2xl transition-all duration-500 ease-out"
@@ -49,8 +50,24 @@
                                     </div>
                                     <h3 class="text-white font-semibold text-base">{{ $product->name }}</h3>
                                     <div class="flex items-center justify-between">
-                                        <span class="text-lg font-bold text-white">{{ number_format($product->price * 10, 0, ',', ' ') }} MAD</span>
+                                        <span class="text-lg font-bold text-white">{{ number_format($product->price, 0, ',', ' ') }} MAD</span>
                                         <span class="text-xs text-orange-300 bg-orange-500/20 px-3 py-1 rounded-full">{{ $product->color }}</span>
+                                        <button onclick="event.stopPropagation(); window.addToCart('{{ $_encoded }}')"
+                                            class="px-3 py-1.5 rounded-lg bg-orange-500/20 border border-orange-500/30 text-orange-300 hover:bg-orange-500/30 hover:text-orange-200 text-xs font-medium transition-all flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                            Ajouter
+                                        </button>
+                                        <button onclick="event.stopPropagation(); window.openFacePreview('{{ $_encoded }}', {
+                                            round: {percentage: 85, explanation: 'Convient parfaitement aux visages ronds'},
+                                            oval: {percentage: 90, explanation: 'Idéal pour les visages ovales'},
+                                            square: {percentage: 70, explanation: 'Bon équilibre pour les visages carrés'},
+                                            heart: {percentage: 75, explanation: 'Flatte les visages en cœur'},
+                                            diamond: {percentage: 65, explanation: 'Complète les visages en diamant'},
+                                        })"
+                                            class="text-xs text-purple-300 hover:text-purple-200 transition-colors flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            Essayer
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -63,8 +80,8 @@
                                 </div>
                                 <h3 class="font-semibold text-white text-sm sm:text-base mb-1 truncate">{{ $product->name }}</h3>
                                 <div class="flex items-center justify-between mt-2">
-                                    <span class="text-base font-bold hero-gradient-text">{{ number_format($product->price * 10, 0, ',', ' ') }} MAD</span>
-                                    <span class="w-4 h-4 rounded-full border border-white/10 block" style="background: {{ match(strtolower($product->color)) { 'gold' => '#FFD700', 'rose gold' => '#B76E79', 'silver' => '#C0C0C0', 'gunmetal' => '#2C3539', 'black' => '#000', 'matte black' => '#1a1a1a', 'tortoise' => '#8B6914', 'crystal' => '#E8E8E8', 'white' => '#fff', 'blue' => '#3B82F6', 'red' => '#EF4444', default => '#f97316' } }}"></span>
+                                    <span class="text-base font-bold hero-gradient-text">{{ number_format($product->price, 0, ',', ' ') }} MAD</span>
+                                    <span class="w-4 h-4 rounded-full border border-white/10 block flex-shrink-0" style="background: {{ match(strtolower($product->color)) { 'gold' => '#FFD700', 'rose gold' => '#B76E79', 'silver' => '#C0C0C0', 'gunmetal' => '#2C3539', 'black' => '#000', 'matte black' => '#1a1a1a', 'tortoise' => '#8B6914', 'crystal' => '#E8E8E8', 'white' => '#fff', 'blue' => '#3B82F6', 'red' => '#EF4444', default => '#f97316' } }}"></span>
                                 </div>
                             </div>
                         </div>

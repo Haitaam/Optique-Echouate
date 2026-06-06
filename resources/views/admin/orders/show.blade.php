@@ -1,0 +1,203 @@
+@extends('layouts.app')
+
+@section('title', 'Commande #' . $order->id)
+
+@php $hideNav = true; @endphp
+
+@section('content')
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex items-center gap-4 mb-8">
+            <a href="{{ route('admin.orders.index') }}" class="text-heroi-text-muted hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-white">Commande #{{ $order->id }}</h1>
+                <p class="text-heroi-text-muted text-sm mt-0.5">{{ $order->created_at->format('d/m/Y H:i') }}</p>
+            </div>
+        </div>
+
+        @if (session('success'))
+            <div class="mb-4 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <p class="text-emerald-300 text-sm">{{ session('success') }}</p>
+            </div>
+        @endif
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="admin-card p-6">
+                <h3 class="text-sm font-semibold text-white mb-4">Informations client</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Nom</span>
+                        <span class="text-white">{{ $order->name }}</span>
+                    </div>
+                    @if ($order->email)
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Email</span>
+                        <span class="text-white">{{ $order->email }}</span>
+                    </div>
+                    @endif
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Téléphone</span>
+                        <span class="text-white">{{ $order->phone }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Ville</span>
+                        <span class="text-white">{{ $order->city }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Adresse</span>
+                        <span class="text-white text-right max-w-[200px]">{{ $order->address }}</span>
+                    </div>
+                    @if ($order->customer)
+                    <div class="flex justify-between pt-2 border-t border-white/5">
+                        <span class="text-heroi-text-muted">Client #</span>
+                        <a href="{{ route('admin.customers.show', $order->customer) }}" class="text-orange-400 hover:text-orange-300">{{ $order->customer->name }}</a>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="admin-card p-6">
+                <h3 class="text-sm font-semibold text-white mb-4">Détails de la commande</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Type</span>
+                        <span class="text-white capitalize">{{ $order->type }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Total</span>
+                        <span class="text-white font-semibold">{{ number_format($order->total_price, 2, ',', ' ') }} MAD</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Bénéfice</span>
+                        <span class="text-emerald-400 font-semibold">{{ number_format($order->profit, 2, ',', ' ') }} MAD</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Paiement</span>
+                        <span class="text-white capitalize">{{ $order->payment_method ?: '—' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Statut paiement</span>
+                        @php
+                            $paymentLabels = [
+                                'pending' => 'En attente',
+                                'paid' => 'Payé',
+                                'failed' => 'Échoué',
+                                'refunded' => 'Remboursé',
+                            ];
+                            $paymentClasses = [
+                                'pending' => 'text-amber-400',
+                                'paid' => 'text-emerald-400',
+                                'failed' => 'text-red-400',
+                                'refunded' => 'text-blue-400',
+                            ];
+                        @endphp
+                        <span class="{{ $paymentClasses[$order->payment_status] ?? 'text-amber-400' }}">{{ $paymentLabels[$order->payment_status] ?? $order->payment_status }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Statut</span>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium {{ $order->badge_class }}">
+                            {{ $order->status_icon }} {{ $order->status_label }}
+                        </span>
+                    </div>
+                    @if ($order->whatsapp_sent)
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">WhatsApp</span>
+                        <span class="text-emerald-400">Envoyé</span>
+                    </div>
+                    @endif
+                    @if ($order->return_reason)
+                    <div class="flex justify-between">
+                        <span class="text-heroi-text-muted">Motif retour</span>
+                        <span class="text-red-400 text-right max-w-[200px]">{{ $order->return_reason }}</span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        @if ($order->prescription_path)
+        <div class="admin-card p-6 mb-6">
+            <h3 class="text-sm font-semibold text-white mb-4">Ordonnance</h3>
+            <a href="{{ asset('storage/' . $order->prescription_path) }}" target="_blank"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-heroi-text-muted hover:text-white text-sm transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Voir l'ordonnance
+            </a>
+        </div>
+        @endif
+
+        @if ($order->notes)
+        <div class="admin-card p-6 mb-6">
+            <h3 class="text-sm font-semibold text-white mb-2">Notes</h3>
+            <p class="text-sm text-heroi-text-muted">{{ $order->notes }}</p>
+        </div>
+        @endif
+
+        @if (is_array($order->items) && count($order->items) > 0)
+        <div class="admin-card p-6 mb-6">
+            <h3 class="text-sm font-semibold text-white mb-4">Articles ({{ count($order->items) }})</h3>
+            <div class="overflow-x-auto">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                            <th>Qté</th>
+                            <th>Prix</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($order->items as $item)
+                            <tr>
+                                <td>
+                                    <span class="text-white text-sm">#{{ $item['product_id'] ?? $item['id'] ?? '—' }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-heroi-text-muted text-sm">{{ $item['quantity'] ?? '—' }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-heroi-text-muted text-sm">{{ number_format($item['price'] ?? 0, 2, ',', ' ') }} MAD</span>
+                                </td>
+                                <td>
+                                    <span class="text-white text-sm font-medium">{{ number_format(($item['price'] ?? 0) * ($item['quantity'] ?? 0), 2, ',', ' ') }} MAD</span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
+        <div class="flex gap-3 flex-wrap">
+            <a href="{{ route('admin.orders.edit', $order) }}"
+                class="px-5 py-2.5 rounded-xl bg-orange-500 text-white hover:bg-orange-400 text-sm font-semibold transition-all shadow-lg shadow-orange-500/30">
+                Modifier la commande
+            </a>
+            @php
+                $whatsappPhone = \App\Models\Setting::get('whatsapp_phone', '212623962180');
+                $waMessage = 'Bonjour Optique Échouate, je suis au sujet de la commande #' . $order->id . ' de ' . $order->name . '. Total: ' . number_format($order->total_price, 2, ',', ' ') . ' MAD. Statut: ' . $order->status_label;
+            @endphp
+            <a href="https://wa.me/{{ $whatsappPhone }}?text={{ urlencode($waMessage) }}" target="_blank"
+                class="px-5 py-2.5 rounded-xl bg-emerald-500 text-white hover:bg-emerald-400 text-sm font-semibold transition-all shadow-lg shadow-emerald-500/30 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                WhatsApp
+            </a>
+            @if (!$order->whatsapp_sent)
+                <form method="POST" action="{{ route('admin.orders.whatsapp', $order) }}" class="inline">
+                    @csrf
+                    <button type="submit"
+                        class="px-5 py-2.5 rounded-xl border border-white/10 text-heroi-text-muted hover:text-white text-sm transition-colors">
+                        Marquer WhatsApp envoyé
+                    </button>
+                </form>
+            @endif
+            <a href="{{ route('admin.orders.index') }}"
+                class="px-5 py-2.5 rounded-xl border border-white/10 text-heroi-text-muted hover:text-white text-sm transition-colors">
+                Retour
+            </a>
+        </div>
+    </div>
+@endsection

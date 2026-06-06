@@ -30,6 +30,7 @@
                         <x-select model="filters.frame_shape" :placeholder="__('messages.products.all_shapes')" :options="$shapes->mapWithKeys(fn($s) => [$s => $s])"/>
                         <x-select model="filters.gender" :placeholder="__('messages.products.all_genders')" :options="$genders->mapWithKeys(fn($g) => [$g => $g])"/>
                         <x-select model="filters.material" :placeholder="__('messages.products.all_materials')" :options="$materials->mapWithKeys(fn($m) => [$m => $m])"/>
+                        <x-select model="filters.category" :placeholder="__('messages.products.all_categories')" :options="$categories->pluck('name', 'id')"/>
                     </div>
                 </div>
 
@@ -37,7 +38,7 @@
                     <div class="text-sm text-heroi-text-muted">
                         <span x-text="document.querySelectorAll('#product-grid [data-product]').length || '...'"></span> {{ __('messages.products.products_count') }}
                     </div>
-                    <button @click="filters = { brand: '', color: '', frame_shape: '', gender: '', material: '', price_min: '', price_max: '', search: '' }; fetchProducts()" class="text-xs text-orange-400 hover:text-orange-300 transition-colors">
+                    <button @click="filters = { brand: '', color: '', frame_shape: '', gender: '', material: '', category: '', price_min: '', price_max: '', search: '' }; fetchProducts()" class="text-xs text-orange-400 hover:text-orange-300 transition-colors">
                         {{ __('messages.products.clear_filters') }}
                     </button>
                 </div>
