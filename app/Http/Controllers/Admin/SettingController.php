@@ -2,27 +2,29 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Setting;
+use App\Services\SettingsService;
 use Illuminate\Http\Request;
 
 class SettingController extends \App\Http\Controllers\Controller
 {
+    public function __construct(
+        private SettingsService $settingsService,
+    ) {}
+
     public function index()
     {
-        $settings = Setting::all()->pluck('value', 'key');
+        $settings = $this->settingsService->all();
 
         return view('admin.settings.index', compact('settings'));
     }
 
     public function update(Request $request)
     {
-        foreach ($request->except(['_token', 'favicon']) as $key => $value) {
-            Setting::set($key, $value);
-        }
+        $this->settingsService->updateFromRequest($request->except(['_token', 'favicon']));
 
         if ($request->hasFile('favicon')) {
             $path = $request->file('favicon')->store('favicon', 'public');
-            Setting::set('favicon', '/storage/' . $path);
+            $this->settingsService->set('favicon', '/storage/' . $path);
         }
 
         return redirect()->route('admin.settings.index')

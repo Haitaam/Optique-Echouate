@@ -135,9 +135,13 @@
         </div>
         @endif
 
-        @if (is_array($order->items) && count($order->items) > 0)
+        @php
+            $orderItems = $order->orderItems ?? collect();
+            $hasItems = $orderItems->isNotEmpty();
+        @endphp
+        @if ($hasItems)
         <div class="admin-card p-6 mb-6">
-            <h3 class="text-sm font-semibold text-white mb-4">Articles ({{ count($order->items) }})</h3>
+            <h3 class="text-sm font-semibold text-white mb-4">Articles ({{ $orderItems->count() }})</h3>
             <div class="overflow-x-auto">
                 <table class="admin-table">
                     <thead>
@@ -149,19 +153,19 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($order->items as $item)
+                        @foreach ($orderItems as $item)
                             <tr>
                                 <td>
-                                    <span class="text-white text-sm">#{{ $item['product_id'] ?? $item['id'] ?? '—' }}</span>
+                                    <span class="text-white text-sm">{{ $item->product?->name ?? '#' . $item->product_id }}</span>
                                 </td>
                                 <td>
-                                    <span class="text-heroi-text-muted text-sm">{{ $item['quantity'] ?? '—' }}</span>
+                                    <span class="text-heroi-text-muted text-sm">{{ $item->quantity }}</span>
                                 </td>
                                 <td>
-                                    <span class="text-heroi-text-muted text-sm">{{ number_format($item['price'] ?? 0, 2, ',', ' ') }} MAD</span>
+                                    <span class="text-heroi-text-muted text-sm">{{ number_format($item->price, 2, ',', ' ') }} MAD</span>
                                 </td>
                                 <td>
-                                    <span class="text-white text-sm font-medium">{{ number_format(($item['price'] ?? 0) * ($item['quantity'] ?? 0), 2, ',', ' ') }} MAD</span>
+                                    <span class="text-white text-sm font-medium">{{ number_format($item->price * $item->quantity, 2, ',', ' ') }} MAD</span>
                                 </td>
                             </tr>
                         @endforeach

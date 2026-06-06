@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Features\Products\Models\Product;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
+    use HasFactory;
     const STATUS_PENDING = 'pending_confirmation';
     const STATUS_CONFIRMED = 'confirmed';
     const STATUS_PREPARING = 'preparing';
@@ -76,6 +79,7 @@ class Order extends Model
         return [
             'total_price' => 'decimal:2',
             'items' => 'array',
+            'whatsapp_sent' => 'boolean',
         ];
     }
 
@@ -152,5 +156,27 @@ class Order extends Model
         ];
 
         return in_array($newStatus, $flow[$this->status] ?? []);
+    }
+
+    public function recalculateTotal(): void
+    {
+        $this->load('orderItems');
+        $this->total_price = $this->orderItems->sum(fn($item) => $item->price * $item->quantity);
+        $this->saveQuietly();
+    }
+
+    public function syncItemsFromOrderItems(): void
+    {
+        $this->load('orderItems.product');
+        $items = $this->orderItems->map(fn($oi) => [
+            'product_id' => $oi->product_id,
+            'name' => $oi->product?->name ?? '#' . $oi->product_id,
+            'price' => (float) $oi->price,
+            'quantity' => $oi->quantity,
+            'image' => $oi->product?->image,
+        ])->toArray();
+
+        $this->items = $items;
+        $this->saveQuietly();
     }
 }

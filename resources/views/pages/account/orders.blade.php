@@ -40,7 +40,7 @@
                             </span>
                         </div>
                         <div class="flex items-center justify-between text-sm">
-                            <span class="text-heroi-text-muted">{{ $order->items ? count($order->items) . ' article(s)' : '' }}</span>
+                            <span class="text-heroi-text-muted">{{ ($order->order_items_count ?? 0) > 0 ? $order->order_items_count . ' article(s)' : '' }}</span>
                             <span class="text-white font-semibold">{{ number_format($order->total_price, 2, ',', ' ') }} MAD</span>
                         </div>
                         @if($order->payment_method)

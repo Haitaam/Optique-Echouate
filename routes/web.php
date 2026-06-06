@@ -58,7 +58,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/login', [App\Http\Controllers\Admin\AuthController::class, 'login']);
     Route::post('/logout', [App\Http\Controllers\Admin\AuthController::class, 'logout'])->name('logout');
 
-    Route::middleware('auth')->group(function () {
+    Route::middleware('admin.auth')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
         Route::get('/glasses', [App\Http\Controllers\Admin\GlassesController::class, 'index'])->name('glasses.index');
         Route::get('/glasses/create', [App\Http\Controllers\Admin\GlassesController::class, 'create'])->name('glasses.create');

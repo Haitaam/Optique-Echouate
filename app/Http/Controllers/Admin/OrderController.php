@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Mail\OrderStatusChanged;
-use App\Features\Products\Models\Product;
 use App\Models\Order;
+use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 
 class OrderController extends \App\Http\Controllers\Controller
 {
+    public function __construct(
+        private OrderService $orderService,
+    ) {}
+
     public function index(Request $request)
     {
         $sortBy = $request->query('sort_by', 'created_at');
@@ -20,7 +24,7 @@ class OrderController extends \App\Http\Controllers\Controller
         if (!in_array($sortBy, $allowedSorts)) $sortBy = 'created_at';
         if (!in_array($sortOrder, ['asc', 'desc'])) $sortOrder = 'desc';
 
-        $query = Order::orderBy($sortBy, $sortOrder);
+        $query = Order::withCount('orderItems')->orderBy($sortBy, $sortOrder);
 
         if ($request->filled('status')) {
             $query->byStatus($request->status);
@@ -46,7 +50,7 @@ class OrderController extends \App\Http\Controllers\Controller
 
     public function pending()
     {
-        $orders = Order::pendingConfirmation()->latest()->paginate(20);
+        $orders = Order::withCount('orderItems')->pendingConfirmation()->latest()->paginate(20);
         $pendingCount = $orders->total();
 
         return view('admin.orders.pending', compact('orders', 'pendingCount'));
@@ -54,11 +58,13 @@ class OrderController extends \App\Http\Controllers\Controller
 
     public function show(Order $order)
     {
+        $order->load('orderItems.product');
         return view('admin.orders.show', compact('order'));
     }
 
     public function edit(Order $order)
     {
+        $order->load('orderItems.product');
         return view('admin.orders.edit', compact('order'));
     }
 
@@ -77,7 +83,7 @@ class OrderController extends \App\Http\Controllers\Controller
             }
 
             if ($validated['status'] === Order::STATUS_CANCELLED) {
-                $this->restoreStock($order);
+                $this->orderService->restoreStock($order);
             }
         }
 
@@ -122,18 +128,10 @@ class OrderController extends \App\Http\Controllers\Controller
                 ->with('error', 'Cette commande ne peut pas être annulée.');
         }
 
-        $this->restoreStock($order);
-
-        $order->update(['status' => Order::STATUS_CANCELLED]);
-
-        try {
-            Mail::to($order->email, $order->name)->send(new OrderStatusChanged($order));
-        } catch (\Exception $e) {
-            // Email is best-effort
-        }
+        $this->orderService->cancelOrder($order);
 
         return redirect()->route('admin.orders.index')
-            ->with('success', 'Commande #' . $order->id . ' annulée.');
+            ->with('success', 'Commande #' . $order->id . ' annulée et stock restauré.');
     }
 
     public function updateStatus(Request $request, Order $order)
@@ -147,7 +145,7 @@ class OrderController extends \App\Http\Controllers\Controller
         }
 
         if ($validated['status'] === Order::STATUS_CANCELLED) {
-            $this->restoreStock($order);
+            $this->orderService->restoreStock($order);
         }
 
         $order->update(['status' => $validated['status']]);
@@ -174,20 +172,5 @@ class OrderController extends \App\Http\Controllers\Controller
         $order->update(['whatsapp_sent' => true]);
 
         return redirect()->back()->with('success', 'WhatsApp marqué comme envoyé.');
-    }
-
-    private function restoreStock(Order $order): void
-    {
-        $items = $order->items;
-        if (!is_array($items)) return;
-
-        foreach ($items as $item) {
-            $productId = $item['product_id'] ?? $item['id'] ?? null;
-            $quantity = (int) ($item['quantity'] ?? 1);
-
-            if ($productId) {
-                Product::where('id', $productId)->increment('stock', $quantity);
-            }
-        }
     }
 }

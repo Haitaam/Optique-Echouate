@@ -69,22 +69,23 @@
                 </p>
             </div>
 
-            @if(is_array($order->items) && count($order->items) > 0)
+            @php $detailItems = $order->orderItems ?? collect(); @endphp
+            @if($detailItems->isNotEmpty())
             <div class="bg-white/5 rounded-xl p-4 border border-white/5">
                 <p class="text-xs text-heroi-text-muted mb-3">Articles commandés</p>
                 <div class="space-y-3">
-                    @foreach($order->items as $item)
+                    @foreach($detailItems as $item)
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            @if(!empty($item['image']))
-                            <img src="{{ $item['image'] }}" alt="{{ $item['name'] ?? 'Article' }}" class="w-10 h-10 rounded-lg object-contain bg-white/5">
+                            @if($item->product && $item->product->image)
+                            <img src="{{ $item->product->image }}" alt="{{ $item->product->name }}" class="w-10 h-10 rounded-lg object-contain bg-white/5">
                             @endif
                             <div>
-                                <p class="text-sm text-white">{{ $item['name'] ?? 'Article #' . ($item['product_id'] ?? '') }}</p>
-                                <p class="text-xs text-heroi-text-muted">x{{ $item['quantity'] ?? 1 }}</p>
+                                <p class="text-sm text-white">{{ $item->product?->name ?? 'Article #' . $item->product_id }}</p>
+                                <p class="text-xs text-heroi-text-muted">x{{ $item->quantity }}</p>
                             </div>
                         </div>
-                        <span class="text-sm text-white font-medium">{{ number_format(($item['price'] ?? 0) * ($item['quantity'] ?? 1), 2, ',', ' ') }} MAD</span>
+                        <span class="text-sm text-white font-medium">{{ number_format($item->price * $item->quantity, 2, ',', ' ') }} MAD</span>
                     </div>
                     @endforeach
                 </div>

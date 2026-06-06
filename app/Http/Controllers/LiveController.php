@@ -5,17 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Notification;
 use App\Features\Products\Models\Product;
+use App\Services\SettingsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class LiveController extends Controller
 {
+    public function __construct(
+        private SettingsService $settingsService,
+    ) {}
+
     public function hash()
     {
         $productHash = md5(Product::max('updated_at') . Product::count());
         $orderHash = md5(Order::max('updated_at') . Order::count());
         $notifHash = md5(Notification::max('created_at') . Notification::unread()->count());
-        $settingsHash = md5(DB::table('settings')->max('updated_at') ?? 'none');
+        $settingsHash = md5($this->settingsService->get('updated_at', 'none'));
 
         return response()->json([
             'products' => $productHash,
@@ -69,7 +73,6 @@ class LiveController extends Controller
 
     public function settings()
     {
-        $settings = DB::table('settings')->pluck('value', 'key');
-        return response()->json($settings);
+        return response()->json($this->settingsService->all());
     }
 }

@@ -56,10 +56,11 @@
                                     <span class="text-white text-sm font-mono">{{ $order->phone }}</span>
                                 </td>
                                 <td>
-                                    @if(is_array($order->items) && count($order->items) > 0)
+                                    @php $pendingItems = $order->orderItems ?? collect(); @endphp
+                                    @if($pendingItems->isNotEmpty())
                                         <div class="text-xs text-heroi-text-muted max-w-[200px] truncate">
-                                            @foreach($order->items as $item)
-                                                <div>{{ $item['name'] ?? '' }} x{{ $item['quantity'] ?? 1 }}</div>
+                                            @foreach($pendingItems as $item)
+                                                <div>{{ $item->product?->name ?? '#' . $item->product_id }} x{{ $item->quantity }}</div>
                                             @endforeach
                                         </div>
                                     @else

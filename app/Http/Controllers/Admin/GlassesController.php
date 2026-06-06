@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Features\Categories\Models\Category;
 use App\Features\Products\Models\Product;
+use App\Models\Brand;
+use App\Models\Color;
+use App\Models\Gender;
+use App\Models\Shape;
 use App\Services\Metadata\ColorAnalyzer;
 use App\Services\Metadata\FilenameParser;
 use App\Services\Metadata\FolderClassifier;
@@ -20,7 +24,6 @@ class GlassesController extends \App\Http\Controllers\Controller
     {
         $query = Product::with('categories');
 
-        // Filters
         if ($search = request('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -57,10 +60,17 @@ class GlassesController extends \App\Http\Controllers\Controller
         ];
 
         $categories = Category::all(['id', 'name', 'slug']);
-        $brands = $allProducts->pluck('brand')->unique()->sort()->values();
-        $genders = ['Men', 'Women', 'Unisex'];
-        $shapes = ['Round', 'Square', 'Rectangle', 'Aviator', 'Cat-eye', 'Butterfly', 'Wrap', 'Oval'];
-        $colors = $allProducts->pluck('color')->unique()->sort()->values();
+
+        $dbBrands = Brand::orderBy('name')->pluck('name');
+        $dbGenders = Gender::orderBy('name')->pluck('name');
+        $dbShapes = Shape::orderBy('name')->pluck('name');
+        $dbColors = Color::orderBy('name')->pluck('name');
+
+        $brands = $dbBrands->isNotEmpty() ? $dbBrands : $allProducts->pluck('brand')->unique()->sort()->values();
+        $genders = $dbGenders->isNotEmpty() ? $dbGenders : collect(['Men', 'Women', 'Unisex']);
+        $shapes = $dbShapes->isNotEmpty() ? $dbShapes : collect(['Round', 'Square', 'Rectangle', 'Aviator', 'Cat-eye', 'Butterfly', 'Wrap', 'Oval']);
+        $colors = $dbColors->isNotEmpty() ? $dbColors : $allProducts->pluck('color')->unique()->sort()->values();
+
         $brandList = $this->brandList();
 
         return view('admin.glasses.index', compact(
@@ -73,8 +83,8 @@ class GlassesController extends \App\Http\Controllers\Controller
     public function edit(Product $product)
     {
         $categories = Category::all();
-        $genders = ['Men', 'Women', 'Unisex'];
-        $shapes = ['Round', 'Square', 'Rectangle', 'Aviator', 'Cat-eye', 'Butterfly', 'Wrap', 'Oval'];
+        $genders = Gender::orderBy('name')->pluck('name');
+        $shapes = Shape::orderBy('name')->pluck('name');
         $brands = $this->brandList();
 
         return view('admin.glasses.edit', compact('product', 'categories', 'genders', 'shapes', 'brands'));
@@ -105,16 +115,15 @@ class GlassesController extends \App\Http\Controllers\Controller
 
         $data['slug'] = $product->slug ?: \Illuminate\Support\Str::slug($data['name'] . '-' . \Illuminate\Support\Str::random(6));
 
-        // Handle image replacement
         if ($request->hasFile('replace_image')) {
-            $oldImage = $product->image;
             $file = $request->file('replace_image');
             $filename = $file->getClientOriginalName();
 
-            $folder = dirname(ltrim($oldImage, '/images/glasses/'));
-            if ($folder === '.') {
-                $folder = 'men';
-            }
+            $folder = $product->image
+                ? dirname(ltrim($product->image, '/images/glasses/'))
+                : 'men';
+
+            if ($folder === '.') $folder = 'men';
 
             $targetDir = public_path('images/glasses/' . $folder);
             if (!File::exists($targetDir)) {
@@ -124,6 +133,8 @@ class GlassesController extends \App\Http\Controllers\Controller
             $file->move($targetDir, $filename);
             $data['image'] = '/images/glasses/' . $folder . '/' . $filename;
         }
+
+        $data = $this->syncBrandColorShapeGender($data);
 
         $product->update($data);
 
@@ -235,6 +246,8 @@ class GlassesController extends \App\Http\Controllers\Controller
                 $productData['style_tags'] = array_map('trim', explode(',', $request->tags));
             }
 
+            $productData = $this->syncBrandColorShapeGender($productData);
+
             Product::create($productData);
             $count++;
         }
@@ -280,7 +293,10 @@ class GlassesController extends \App\Http\Controllers\Controller
             $update = [];
             if (!empty($data['brand'])) $update['brand'] = $data['brand'];
             if (!empty($data['tags'])) $update['style_tags'] = array_map('trim', explode(',', $data['tags']));
-            if (!empty($update)) $product->update($update);
+            if (!empty($update)) {
+                $update = $this->syncBrandColorShapeGender($update);
+                $product->update($update);
+            }
 
             if (!empty($data['category_id'])) {
                 $product->categories()->sync([(int) $data['category_id']]);
@@ -345,7 +361,7 @@ class GlassesController extends \App\Http\Controllers\Controller
                     'color' => $p->color,
                     'frame_shape' => $p->frame_shape,
                     'material' => $p->material,
-                    'price' => $p->price * 10,
+                    'price' => (float) $p->price,
                     'image' => $p->image,
                     'image_exists' => $p->imageExists(),
                     'categories' => $p->categories->pluck('name')->implode(', '),
@@ -367,7 +383,7 @@ class GlassesController extends \App\Http\Controllers\Controller
                     $p->color,
                     $p->frame_shape,
                     $p->material,
-                    $p->price * 10,
+                    (float) $p->price,
                     $p->image,
                     $p->imageExists() ? 'Oui' : 'Non',
                     $p->categories->pluck('name')->implode(', '),
@@ -392,6 +408,11 @@ class GlassesController extends \App\Http\Controllers\Controller
 
     protected function brandList(): array
     {
+        $dbBrands = Brand::orderBy('name')->pluck('name')->toArray();
+        if (!empty($dbBrands)) {
+            return $dbBrands;
+        }
+
         return [
             'Armani', 'Armani Style', 'Balenciaga', 'Biaggi', 'Bolon',
             'Carrera', 'Dolce & Gabbana', 'Emporio Armani', 'Gucci',
@@ -399,5 +420,42 @@ class GlassesController extends \App\Http\Controllers\Controller
             'Police', 'Porsche Design', 'Prada', 'Ray-Ban', 'Tom Ford',
             'Valentino', 'Versace', 'Victoria Beckham', 'Vogue',
         ];
+    }
+
+    private function syncBrandColorShapeGender(array $data): array
+    {
+        if (isset($data['brand']) && is_string($data['brand'])) {
+            $brand = Brand::firstOrCreate(
+                ['slug' => \Illuminate\Support\Str::slug($data['brand'])],
+                ['name' => $data['brand']]
+            );
+            $data['brand_id'] = $brand->id;
+        }
+
+        if (isset($data['color']) && is_string($data['color'])) {
+            $color = Color::firstOrCreate(
+                ['slug' => \Illuminate\Support\Str::slug($data['color'])],
+                ['name' => $data['color']]
+            );
+            $data['color_id'] = $color->id;
+        }
+
+        if (isset($data['frame_shape']) && is_string($data['frame_shape'])) {
+            $shape = Shape::firstOrCreate(
+                ['slug' => \Illuminate\Support\Str::slug($data['frame_shape'])],
+                ['name' => $data['frame_shape']]
+            );
+            $data['shape_id'] = $shape->id;
+        }
+
+        if (isset($data['gender']) && is_string($data['gender'])) {
+            $gender = Gender::firstOrCreate(
+                ['slug' => \Illuminate\Support\Str::slug($data['gender'])],
+                ['name' => $data['gender']]
+            );
+            $data['gender_id'] = $gender->id;
+        }
+
+        return $data;
     }
 }

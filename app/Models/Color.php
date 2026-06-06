@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use App\Features\Products\Models\Product;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Color extends Model
 {
     protected $fillable = [
-        'name', 'slug', 'hex_value', 'description',
+        'name', 'slug', 'hex',
     ];
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
 }

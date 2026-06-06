@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Review;
-use App\Http\Controllers\CheckoutController;
 use Illuminate\Http\Request;
 
 class AccountController extends Controller
@@ -13,7 +12,11 @@ class AccountController extends Controller
     {
         $customer = auth('customer')->user();
         $ordersCount = Order::where('customer_id', $customer->id)->count();
-        $latestOrders = Order::where('customer_id', $customer->id)->latest()->take(5)->get();
+        $latestOrders = Order::where('customer_id', $customer->id)
+            ->withCount('orderItems')
+            ->latest()
+            ->take(5)
+            ->get();
 
         return view('pages.account.index', compact('ordersCount', 'latestOrders'));
     }
@@ -22,6 +25,7 @@ class AccountController extends Controller
     {
         $customer = auth('customer')->user();
         $orders = Order::where('customer_id', $customer->id)
+            ->withCount('orderItems')
             ->latest()
             ->paginate(10);
 
@@ -36,7 +40,8 @@ class AccountController extends Controller
             abort(403);
         }
 
-        $paymentMethods = CheckoutController::PAYMENT_METHODS;
+        $order->load('orderItems.product');
+        $paymentMethods = self::PAYMENT_METHODS;
 
         return view('pages.account.order-detail', compact('order', 'paymentMethods'));
     }
@@ -49,8 +54,16 @@ class AccountController extends Controller
             abort(403);
         }
 
+        $order->load('orderItems.product');
+
         return response()->json([
-            'items' => $order->items,
+            'items' => $order->orderItems->map(fn($oi) => [
+                'product_id' => $oi->product_id,
+                'name' => $oi->product?->name ?? '#' . $oi->product_id,
+                'price' => (float) $oi->price,
+                'quantity' => $oi->quantity,
+                'image' => $oi->product?->image,
+            ]),
         ]);
     }
 
@@ -64,6 +77,7 @@ class AccountController extends Controller
 
         $reviewableOrders = Order::where('customer_id', $customer->id)
             ->whereIn('status', [Order::STATUS_DELIVERED])
+            ->withCount('orderItems')
             ->latest()
             ->get();
 
@@ -107,4 +121,8 @@ class AccountController extends Controller
     {
         return view('pages.account.addresses');
     }
+
+    const PAYMENT_METHODS = [
+        'bank_transfer' => 'Virement bancaire (BMCE Bank)',
+    ];
 }
