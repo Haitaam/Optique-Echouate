@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Review;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class AccountController extends Controller
 {
@@ -13,6 +15,7 @@ class AccountController extends Controller
         $customer = auth('customer')->user();
         $ordersCount = Order::where('customer_id', $customer->id)->count();
         $latestOrders = Order::where('customer_id', $customer->id)
+            ->with('orderItems.product')
             ->withCount('orderItems')
             ->latest()
             ->take(5)
@@ -25,6 +28,7 @@ class AccountController extends Controller
     {
         $customer = auth('customer')->user();
         $orders = Order::where('customer_id', $customer->id)
+            ->with('orderItems.product')
             ->withCount('orderItems')
             ->latest()
             ->paginate(10);
@@ -77,6 +81,7 @@ class AccountController extends Controller
 
         $reviewableOrders = Order::where('customer_id', $customer->id)
             ->whereIn('status', [Order::STATUS_DELIVERED])
+            ->with('orderItems.product')
             ->withCount('orderItems')
             ->latest()
             ->get();
@@ -115,6 +120,40 @@ class AccountController extends Controller
         ]);
 
         return back()->with('success', 'Merci pour votre avis ! Il sera visible après modération.');
+    }
+
+    public function info()
+    {
+        $customer = auth('customer')->user();
+        return view('pages.account.info', compact('customer'));
+    }
+
+    public function updateInfo(Request $request)
+    {
+        $customer = auth('customer')->user();
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'email', 'max:255', Rule::unique('customers')->ignore($customer->id)],
+            'phone' => 'nullable|string|max:20',
+            'current_password' => 'nullable|required_with:new_password|string',
+            'new_password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        $customer->name = $data['name'];
+        $customer->email = $data['email'];
+        $customer->phone = $data['phone'] ?? $customer->phone;
+
+        if (!empty($data['new_password'])) {
+            if (!Hash::check($data['current_password'], $customer->password)) {
+                return back()->with('error', 'Le mot de passe actuel est incorrect.');
+            }
+            $customer->password = Hash::make($data['new_password']);
+        }
+
+        $customer->save();
+
+        return back()->with('success', 'Vos informations ont été mises à jour.');
     }
 
     public function addresses()

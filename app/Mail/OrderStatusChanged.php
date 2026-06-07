@@ -19,7 +19,7 @@ class OrderStatusChanged extends Mailable
 
     public function __construct(Order $order)
     {
-        $this->order = $order;
+        $this->order = $order->load('orderItems.product');
         $this->statusColor = match ($order->status) {
             Order::STATUS_CONFIRMED => '#22c55e',
             Order::STATUS_PREPARING => '#3b82f6',

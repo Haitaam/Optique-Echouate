@@ -156,7 +156,12 @@
                         @foreach ($orderItems as $item)
                             <tr>
                                 <td>
-                                    <span class="text-white text-sm">{{ $item->product?->name ?? '#' . $item->product_id }}</span>
+                                    <div class="flex items-center gap-3">
+                                        @if($item->product?->image)
+                                        <img src="{{ $item->product->image }}" alt="{{ $item->product->name }}" class="w-10 h-10 rounded-lg object-contain bg-white/5 flex-shrink-0">
+                                        @endif
+                                        <span class="text-white text-sm">{{ $item->product?->name ?? '#' . $item->product_id }}</span>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="text-heroi-text-muted text-sm">{{ $item->quantity }}</span>

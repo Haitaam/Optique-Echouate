@@ -46,6 +46,8 @@ Route::middleware('auth:customer')->group(function () {
     Route::get('/account/orders/{order}/items', [App\Http\Controllers\AccountController::class, 'orderItems'])->name('account.orders.items');
     Route::get('/account/reviews', [App\Http\Controllers\AccountController::class, 'reviews'])->name('account.reviews');
     Route::post('/account/reviews', [App\Http\Controllers\AccountController::class, 'storeReview'])->name('account.reviews.store');
+    Route::get('/account/info', [App\Http\Controllers\AccountController::class, 'info'])->name('account.info');
+    Route::post('/account/info', [App\Http\Controllers\AccountController::class, 'updateInfo'])->name('account.info.update');
     Route::get('/account/addresses', [App\Http\Controllers\AccountController::class, 'addresses'])->name('account.addresses');
     Route::get('/account/wishlist', [App\Http\Controllers\WishlistController::class, 'index'])->name('account.wishlist');
     Route::post('/wishlist', [App\Http\Controllers\WishlistController::class, 'store'])->name('wishlist.store');

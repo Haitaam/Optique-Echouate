@@ -82,7 +82,7 @@ class CheckoutController extends Controller
         $successMsg = 'Votre commande #' . $order->id . ' a été créée avec succès ! ';
         $successMsg .= 'Un email de confirmation vous a été envoyé.';
 
-        return redirect()->route('account.orders')
+        return redirect()->route('account.orders.show', $order)
             ->with('success', $successMsg)
             ->with('order_confirmed', true);
     }
